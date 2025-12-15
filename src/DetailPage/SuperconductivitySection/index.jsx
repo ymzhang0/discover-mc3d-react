@@ -10,13 +10,15 @@ import {
 
 import { CitationsList } from "../../common/CitationsList";
 import { DoiBadge, ExploreButton } from "mc-react-library";
-import { EXPLORE_URLS } from "../../common/AIIDArestApiUtils";
+import { EXPLORE_URLS } from "../../common/aiidaRestApiUtils";
 
 import SuperconInfoBox from "./InfoBoxes";
 import GapFunction from "./GapFunction";
 import { getA2FTraces } from "./getA2FTraces";
 
 import BandStructure from "../../common/BandStructure/BandStructure";
+
+import { WarningBox, WarningBoxOtherMethod } from "../../common/WarningBox";
 
 import {
   SUPERCON_BANDS_LAYOUT_CONFIG,
@@ -29,9 +31,10 @@ export default function SuperConductivitySection({
   loadedData,
   superconData,
 }) {
-  const supercon = superconData.supercon;
+  if (!superconData?.scDetails?.supercon) return null;
 
-  const method = params.method;
+  const method = superconData.method;
+  const supercon = superconData.scDetails.supercon;
 
   // --- Bands ---
   const { data: bandsResults, loading: bandsLoading } = useAsyncEffect(
@@ -58,7 +61,6 @@ export default function SuperConductivitySection({
   const hasPhBands = !!phononBandsArray.length;
 
   // fallback if nothing exists.
-  if (!supercon) return <div className="empty-supercon-div" />;
 
   return (
     <div>
@@ -83,21 +85,19 @@ export default function SuperConductivitySection({
             <DoiBadge doi_id="9w-az" label="Data DOI" />
           </div>
         </div>
-
-        <div
-          className="alert alert-warning"
-          style={{ margin: "10px 10px 5px 10px" }}
-          role="alert"
-        >
-          This contribution re-relaxes the structure with a different
-          methodology. To see this structure, explore the AiiDA provenance{" "}
-          {supercon.structure_uuid && (
+        {params.method !== method && (
+          <WarningBoxOtherMethod method={method} id={params.id} />
+        )}
+        {
+          <WarningBox>
+            Warning: This dataset re-relaxes the structure with a different
+            methodology. To see this new structure, explore the AiiDA provenance{" "}
             <ExploreButton
-              explore_url={EXPLORE_URLS[params.method] + "-supercon"}
+              explore_url={EXPLORE_URLS["pbesol-v1-supercon"]}
               uuid={supercon.structure_uuid}
             />
-          )}
-        </div>
+          </WarningBox>
+        }
         <div style={{ padding: "10px 10px", textAlign: "justify" }}>
           This dataset provides results from a high-throughput search for
           phonon-mediated superconductivity, where electron–phonon interactions
@@ -107,7 +107,7 @@ export default function SuperConductivitySection({
           well as the intermediate electronic and vibrational calculated
           properties. For further details regarding the methodology see the{" "}
           <a href="./#/contributions" target="_blank" rel="noopener noreferrer">
-            contribution details
+            extended dataset documentation
           </a>
           .
         </div>
@@ -116,7 +116,7 @@ export default function SuperConductivitySection({
         <Row>
           {/* Looks bad on sm/md breakpoints but also md/lg breakpoints look bad too... */}
           <Col sm={12} md={6} className="mt-2 mt-md-5">
-            <SuperconInfoBox superconData={supercon} />
+            <SuperconInfoBox params={params} superconData={supercon} />
           </Col>
           <Col sm={12} md={6} className="mt-3 mt-md-0">
             <div className="subsection-title">Electronic band structure</div>
@@ -124,14 +124,14 @@ export default function SuperConductivitySection({
               Calculated with Quantum ESPRESSO (QE){" "}
               {supercon.qe_el_band_structure_uuid && (
                 <ExploreButton
-                  explore_url={EXPLORE_URLS[params.method] + "-supercon"}
+                  explore_url={EXPLORE_URLS["pbesol-v1-supercon"]}
                   uuid={supercon.qe_el_band_structure_uuid}
                 />
               )}{" "}
               and EPW{" "}
               {supercon.epw_el_band_structure_uuid && (
                 <ExploreButton
-                  explore_url={EXPLORE_URLS[params.method] + "-supercon"}
+                  explore_url={EXPLORE_URLS["pbesol-v1-supercon"]}
                   uuid={supercon.epw_el_band_structure_uuid}
                 />
               )}
@@ -157,7 +157,7 @@ export default function SuperConductivitySection({
                 Phonon band structure calculated with EPW{" "}
                 {supercon.epw_ph_band_structure_uuid && (
                   <ExploreButton
-                    explore_url={EXPLORE_URLS[params.method] + "-supercon"}
+                    explore_url={EXPLORE_URLS[method] + "-supercon"}
                     uuid={supercon.epw_ph_band_structure_uuid}
                   />
                 )}{" "}
@@ -165,7 +165,7 @@ export default function SuperConductivitySection({
                 coupling strength [λ(ω)]{" "}
                 {supercon.a2f_uuid && (
                   <ExploreButton
-                    explore_url={EXPLORE_URLS[params.method] + "-supercon"}
+                    explore_url={EXPLORE_URLS[method] + "-supercon"}
                     uuid={supercon.a2f_uuid}
                   />
                 )}{" "}
@@ -176,7 +176,7 @@ export default function SuperConductivitySection({
                 loading={bandsLoading}
                 loadingIconScale={7}
                 minYval={0}
-                maxYval={supercon.highest_phonon_frequency + 2}
+                maxYval={supercon.highest_phonon_frequency + 4}
                 dosDataArray={[
                   {
                     dosData: { x: [0], y: [0] }, // fake dosData.
@@ -209,7 +209,7 @@ export default function SuperConductivitySection({
                 Anisotropic superconducting gap function{" "}
                 {supercon.aniso_gap_function_uuid && (
                   <ExploreButton
-                    explore_url={EXPLORE_URLS[params.method] + "-supercon"}
+                    explore_url={EXPLORE_URLS[method] + "-supercon"}
                     uuid={supercon.aniso_gap_function_uuid}
                   />
                 )}{" "}
